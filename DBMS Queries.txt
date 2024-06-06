@@ -1,0 +1,200 @@
+﻿-----------------------------------------------------------------------------------------------------------------SQL STATEMENTS OF QUERIES-------------------------------------------------------------------------------------------------------------------
+
+1) Retrieve data (Name and Mobile Number) of Instructors and Course (Course ID and Course Title) they are teaching who have more than 5 years of experience and are teaching a course in English
+
+
+SELECT I.I_Name, I.I_MobileNumber, C.Course_ID, C.Course_Title 
+FROM courses_offered as CO
+NATURAL JOIN course as C
+NATURAL JOIN instructor as I
+WHERE C.language='English' AND I.i_experience > 5 
+
+
+2) Calculate the average rating for each instructor who has conducted at least one paid course registration and give the output in descending order of average rating
+
+
+SELECT I.Instructor_ID, I.I_Name, AVG(Rating) AS Average_Rating
+FROM Instructor AS I
+JOIN Paid_Course_Registration AS PCR ON I.Instructor_ID = PCR.Instructor_ID
+WHERE Rating IS NOT NULL
+GROUP BY I.Instructor_ID, I.I_Name
+ORDER BY average_rating DESC;
+
+
+3) Give test details (test_id, total_marks, marks_obtained) of the top performing students of each test
+
+
+SELECT RS.RS_Name AS Student_Name, R.Test_ID, R.Obtained_Marks, TD.Total_Marks
+FROM Result R
+JOIN Registered_Student RS ON R.Student_ID = RS.Student_ID
+JOIN Test_Details TD ON R.Test_ID = TD.Test_ID
+WHERE (R.Obtained_Marks, R.Test_ID) IN (
+    SELECT MAX(Obtained_Marks), Test_ID
+    FROM Result
+    GROUP BY Test_ID
+);
+
+
+4) Give details (course_name, course_id, instructor_id, instructor_name) of the courses offered having number of students registered in each of those courses being greater than 10
+
+
+SELECT C.Course_Title, C.Course_ID, I.I_Name AS Instructor_Name, I.Instructor_ID, COUNT(PC.Student_ID) AS Registered_Students
+FROM Course C
+JOIN Courses_Offered CO ON C.Course_ID = CO.Course_ID
+JOIN Instructor I ON CO.Instructor_ID = I.Instructor_ID
+LEFT JOIN Paid_Course_Registration PC ON CO.Course_ID = PC.Course_ID AND CO.Instructor_ID = PC.Instructor_ID
+GROUP BY C.Course_ID, I.Instructor_ID, C.Course_Title, I.I_Name 
+HAVING COUNT(PC.Student_ID) > 10
+ORDER BY Registered_Students DESC;
+        
+
+
+5) List the (Students, CourseID) who have attendance greater than 90% for each course they are registered in.
+
+
+SELECT RS.Student_ID, RS.RS_Name, PCR.Course_ID  AS Student_Name
+FROM Registered_Student AS RS NATURAL JOIN Paid_Course_Registration AS PCR
+WHERE RS.Student_ID IN (
+SELECT PC.Student_ID 
+FROM Paid_Course_Registration PC
+JOIN Courses_Offered CO ON PC.Course_ID = CO.Course_ID AND PC.Instructor_ID = CO.Instructor_ID
+GROUP BY PC.Student_ID, CO.Course_ID
+HAVING MIN(PC.Attendance) > 90);
+
+
+6) List the instructors who have not conducted any courses
+
+
+SELECT I_Name
+FROM Instructor
+WHERE Instructor_ID NOT IN (
+    SELECT DISTINCT Instructor_ID
+    FROM Courses_Offered
+);
+
+
+7) Find the students who have taken tests in all available courses
+
+
+SELECT RS.Student_ID, RS.RS_Name AS Student_Name
+FROM Registered_Student RS
+WHERE NOT EXISTS (
+    SELECT DISTINCT Course_ID
+    FROM Course
+    WHERE Course_ID NOT IN (
+        SELECT DISTINCT Course_ID
+        FROM Result R
+        WHERE RS.Student_ID = R.Student_ID
+    )
+);
+
+
+8) Retrieve the information of students who have not attended any doubt solving sessions
+
+
+SELECT RS.RS_Name AS Student_Name, RS.RS_Email AS Student_Email
+FROM Registered_Student RS
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Doubt_Solving DS
+    WHERE RS.Student_ID = DS.Student_ID
+);
+
+
+9) Find the students who have achieved consistent high performance (average marks above 80%) across all tests he has given
+
+
+SELECT RS.Student_ID, RS.RS_Name AS Student_Name
+FROM Registered_Student RS
+WHERE RS.Student_ID NOT IN (
+        SELECT R.Student_ID
+        FROM Result R
+        GROUP BY R.Student_ID
+        HAVING AVG(R.Obtained_Marks) <= 80
+);
+
+
+10) List the free courses ordered by the number of students registered in them, with the course with the highest number of registrations appearing first.
+
+
+SELECT C.Course_ID, C.Course_Title, COUNT(FCR.URS_Email) AS Num_Students_Registered
+FROM Course C
+JOIN Free_Course_Registration FCR ON C.Course_ID = FCR.Course_ID
+GROUP BY C.Course_ID, C.Course_Title
+ORDER BY Num_Students_Registered DESC;
+11) Give the number of students and assistant details who are under each assistants for a particular course and also give the course details
+
+
+SELECT A.Assistant_ID, A.A_Name AS Assistant_Name, COUNT(PC.Student_ID) AS Num_Students, C.Course_ID, C.Course_Title
+FROM Assistant A
+JOIN Paid_Course_Registration PC ON A.Course_ID = PC.Course_ID
+JOIN Course C ON PC.Course_ID = C.Course_ID
+GROUP BY A.Assistant_ID, A.A_Name, C.Course_ID, C.Course_Title;
+
+
+
+
+12) Retrieve the details of parents whose student has a performance greater than 8 along with all the test results for those students
+
+
+SELECT PD.Student_ID, PD.P_Name AS Parent_Name, PD.P_MobileNumber AS Parent_MobileNumber,
+PD.P_Email AS Parent_Email, R.Test_ID, R.Obtained_Marks
+FROM Interacts I
+JOIN Parent_Details PD ON I.Student_ID = PD.Student_ID
+JOIN Result R ON I.Student_ID = R.Student_ID
+WHERE I.Performance > 8
+ORDER BY R.Student_ID
+
+
+13) Give data of those courses along with their instructor id and name which have more than 70% completion rate
+
+
+SELECT c.Course_ID, c.Course_Title, i.Instructor_ID, i.I_Name AS Instructor_Name
+FROM Course c
+JOIN Courses_Offered co ON c.Course_ID = co.Course_ID
+JOIN Instructor i ON co.Instructor_ID = i.Instructor_ID
+WHERE co.Classes_completed > co.Total_classes * 0.70;
+
+
+14) Give course_ID of the courses which have more than 10 students registered in them
+
+
+SELECT c.Course_ID, c.Course_Title, count(pcr.student_id)
+FROM Course c
+JOIN Courses_Offered co ON c.Course_ID = co.Course_ID
+JOIN Paid_Course_Registration pcr ON co.Course_ID = pcr.Course_ID
+GROUP BY c.Course_ID, c.Course_Title
+HAVING COUNT(DISTINCT pcr.Student_ID) > 10;
+
+
+15) List the city-wise toppers(student_ID, student_Name) with test-id, obtained marks.
+
+
+SELECT rs.RS_city AS City, r.Student_ID, rs.rs_name, r.Test_ID, r.Obtained_Marks
+FROM Registered_Student rs
+JOIN Result r ON rs.Student_ID = r.Student_ID
+WHERE (r.Obtained_Marks, rs.RS_city) IN (
+SELECT MAX(r.Obtained_Marks) AS Max_Marks, rs.RS_city AS City
+FROM Registered_Student rs
+JOIN Result r ON rs.Student_ID = r.Student_ID
+GROUP BY rs.RS_city
+);
+
+16) Give the list of courses which have classes scheduled in the first week of May
+
+SELECT c.Course_ID, c.Course_Title
+FROM Course c
+JOIN Courses_Offered co ON c.Course_ID = co.Course_ID
+WHERE co.Next_class >= DATE '2024-05-01' AND co.Next_class < DATE '2024-05-08';
+
+17) Find the top 3 instructors with the highest average rating among instructors who have taught courses in at least two different subject areas.
+
+SELECT I.I_Name, AVG(PCR.Rating) AS Avg_Rating
+FROM Instructor I
+JOIN Courses_Offered CO ON I.Instructor_ID = CO.Instructor_ID
+JOIN Paid_Course_Registration PCR ON CO.Instructor_ID = PCR.Instructor_ID AND CO.Course_ID = PCR.Course_ID
+GROUP BY I.I_Name
+HAVING COUNT(DISTINCT CO.Course_ID) >= 2
+ORDER BY Avg_Rating DESC
+LIMIT 3;
+

@@ -1,0 +1,172 @@
+--------------------------------------------------------------------------------------------------------------------------DDL_SCRIPTS---------------------------------------------------------------------------------------------------------------------------------
+
+CREATE SCHEMA T406;
+SET SEARCH_PATH TO T406;
+
+CREATE TABLE Registered_Student (
+	Student_ID char(10) Primary key,
+	RS_Email varchar(40) not null,
+	RS_Name varchar(30) not null,
+	RS_MobileNumber numeric(10,0) not null,
+	state_name varchar(20),
+	RS_city varchar(20),
+	Locality varchar(20)
+);
+
+CREATE TABLE Course (
+	Course_ID char(5) Primary key,
+	Language varchar(15) not null,
+	Batch int not null,
+	Duration varchar(20),
+	Course_Title varchar(20) not null
+);
+
+CREATE TABLE Instructor (
+	Instructor_ID char(5) Primary key,
+	I_MobileNumber numeric(10,0) not null,
+	I_Email varchar(40) not null,
+	I_Name varchar(30) not null,
+	I_Experience int,
+	I_InstituteName varchar(30),
+	I_SubjectArea varchar(30)
+);
+
+CREATE TABLE Unregistered_Student (
+	URS_Email varchar(40) Primary key,
+	URS_Name varchar(30) not null,
+	URS_MobileNumber numeric(10,0) not null,
+	URS_City varchar(30)
+);
+
+CREATE TABLE Assistant (
+	Assistant_ID char(5) primary key,
+	Course_ID char(5),
+	Instructor_ID char(5),
+	A_Name varchar(30) not null,
+	A_MobileNumber numeric(10,0) not null,
+	A_Email varchar(40) not null,
+	A_Experience int,
+	A_InstituteName varchar(30),
+	A_SubjectArea varchar(30),
+	
+	CONSTRAINT FK1 FOREIGN KEY(Instructor_ID) REFERENCES Instructor(Instructor_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+
+	CONSTRAINT FK2 FOREIGN KEY(Course_ID) REFERENCES Course(Course_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE
+	
+);
+
+CREATE TABLE Test_Details (
+	Test_ID char(7),
+	Course_ID char(5),
+	Total_Marks numeric(5,2) not null,
+	
+	CONSTRAINT FK2 FOREIGN KEY(Course_ID) REFERENCES Course(Course_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Test_ID)
+);
+
+
+CREATE TABLE Result (
+	Student_ID char(10),
+	Test_ID char(7),
+	Obtained_Marks numeric(5,2) not null default 0,
+	"Rank" int not null,
+	
+	CONSTRAINT FK1 FOREIGN KEY(Student_ID) REFERENCES Registered_Student(Student_ID)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	CONSTRAINT FK2 FOREIGN KEY(Test_ID) REFERENCES Test_Details(Test_ID)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Student_ID, Test_ID)
+);
+
+CREATE TABLE Parent_Details (
+	Student_ID char(10),
+	P_Name varchar(30),
+	P_MobileNumber numeric(10,0) not null,
+	P_Email varchar(40) not null,
+	
+	CONSTRAINT FK1 FOREIGN KEY(Student_ID) REFERENCES Registered_Student(Student_ID)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Student_ID, P_Name)
+);
+
+CREATE TABLE Courses_Offered (
+	Fees numeric(8,2) default 0,
+	Instructor_ID char(5),
+	Course_ID char(5),
+	Total_classes int,
+	Classes_completed int, 
+	Next_class date,
+	
+	CONSTRAINT FK1 FOREIGN KEY(Instructor_ID) REFERENCES Instructor(Instructor_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT FK2 FOREIGN KEY(Course_ID) REFERENCES Course(Course_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Instructor_ID, Course_ID)
+);
+
+
+CREATE TABLE Paid_Course_Registration (
+	Student_ID char(10),
+	Instructor_ID char(5),
+	Course_ID char(5),
+	Attendance numeric(5,2) not null default 0,
+	Rating numeric(4,2),
+	
+	CONSTRAINT FK1 FOREIGN KEY(Instructor_ID, Course_ID) REFERENCES Courses_Offered(Instructor_ID, Course_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+
+	CONSTRAINT FK3 FOREIGN KEY(Student_ID) REFERENCES Registered_Student(Student_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Course_ID, Student_ID, Instructor_ID)
+);
+
+
+CREATE TABLE Interacts (
+	Student_ID char(10),
+	P_Name varchar(30),
+	Assistant_ID char(5),
+	Performance numeric(3,1),
+	
+	CONSTRAINT FK1 FOREIGN KEY(Student_ID, P_Name) REFERENCES Parent_Details(Student_ID, P_Name)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT FK3 FOREIGN KEY(Assistant_ID) REFERENCES Assistant(Assistant_ID)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+
+	PRIMARY KEY(Student_ID, P_Name, Assistant_ID)
+);
+
+
+
+CREATE TABLE Free_Course_Registration (
+	URS_Email varchar(40),
+	Course_ID char(5),
+	Instructor_ID char(5),
+	
+	CONSTRAINT FK1 FOREIGN KEY(URS_Email) REFERENCES Unregistered_Student(URS_Email) 
+	ON DELETE CASCADE ON UPDATE CASCADE,
+        	CONSTRAINT FK2 FOREIGN KEY(Instructor_ID, Course_ID) REFERENCES Courses_Offered(Instructor_ID, Course_ID) 	
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (URS_Email, Course_ID, Instructor_ID)
+);
+
+CREATE TABLE Doubt_Solving (
+	Assistant_ID char(5),
+	Student_ID char(10),
+	Review decimal(3,1),
+	CONSTRAINT FK1 FOREIGN KEY(Assistant_ID) REFERENCES Assistant(Assistant_ID)
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	CONSTRAINT FK2 FOREIGN KEY(Student_ID) REFERENCES Registered_Student(Student_ID) 
+	ON DELETE CASCADE ON UPDATE CASCADE,
+	
+	PRIMARY KEY (Assistant_ID, Student_ID)
+);
