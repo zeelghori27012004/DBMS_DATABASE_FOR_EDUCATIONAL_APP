@@ -12,4 +12,4 @@ Application Users :
 4. Parents
   <br>
 5. Unregistered Students
-</p>p
+</p>
